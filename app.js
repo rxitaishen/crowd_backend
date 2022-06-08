@@ -590,12 +590,12 @@ app.post('/api/projects/edit', (req, res, next) => {
 
 
 
-// ----------------地址管理================//
+// ----------------收货地址管理================//
 
 // 用户名查询收货地址
 app.post('/api/projects/receive/owner', (req, res, next) => {
 	let t = req.body
-	projects.find({ "owner": t.owner }, (err, project) => {
+	receive.find({ "owner": t.owner }, (err, project) => {
 		if (err) {
 			throw err;
 		}
@@ -612,7 +612,7 @@ app.post('/api/projects/receive/owner', (req, res, next) => {
 app.post('/api/projects/receive/add', (req, res, next) => {
 	console.log('添加用户支持记录,即用户支持了事情')
 	//req.body test {"proName":"hahaha","userName":"wu","suportTime":"","suportMoney":131}
-	buyRecords.create(req.body, (err, userSuport) => {
+	receive.create(req.body, (err, userSuport) => {
 		console.log(userSuport)
 		if (err) {
 			throw err;
@@ -631,7 +631,7 @@ app.post('/api/projects/receive/add', (req, res, next) => {
 //删除用户地址
 app.delete('/api/receive/:id', (req, res) => {
 	var query = { _id: req.params._id };
-	projects.deleteOne(query, (err, project) => {
+	receive.deleteOne(query, (err, project) => {
 		if (err) {
 			throw err;
 		}
@@ -639,6 +639,38 @@ app.delete('/api/receive/:id', (req, res) => {
 	});
 });
 
+
+//编辑用户地址
+app.post('/api/receive/edit', (req, res, next) => {
+	console.log('编辑用户地址',req.body,req)
+	let t = req.body._id
+	projects.findOne({ _id: t }, (err, project) => {
+		if (err) {
+			throw err;
+		}
+		if (project !== null) { //findone 和find 返回值有区别，当找不到时 find返回空数组，findone返回null
+			console.log('proName不为null',req.body);
+			console.log('proName不为null');
+			projects.updateOne({'_id':t},  req.body,(err, docs)=>{
+				if(err){
+					res.json('访问失败')
+				}
+				/**更新数据成功，紧接着查询数据 */
+				projects.findOne({ '_id':t },(err, p)=>{
+					if(err){
+						res.json('访问失败')
+					}
+					res.json('访问成功')
+				})
+			})
+			
+		}
+		else {
+			console.log('proName为null');
+			res.send("访问失败")
+		}
+	});
+});
 
 app.listen(5000)
 console.log('Running on port 5000...');
