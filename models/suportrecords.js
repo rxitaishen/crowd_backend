@@ -4,11 +4,9 @@ const mongoose = require('mongoose');
 const suportRecordsSchema = mongoose.Schema({
 	"proName":{
 		type: String,
-		
 	},
 	"userName":{
 		type: String,
-		
 	},
     "suportTime":{
         type: String,

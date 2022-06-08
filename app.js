@@ -10,7 +10,8 @@ var multiparty = require("multiparty");
 users = require('./models/users');
 projects = require('./models/projects');
 suportrecords = require('./models/suportrecords');
-
+buyRecords = require('./models/buyRecords');
+receive = require('./models/receive');
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json())
@@ -73,7 +74,8 @@ app.post(`/api/login`, (req, res) => {
 //注册
 app.post(`/api/register`, (req, res) => {
 	var t = req.body;
-	users.create({ "name": t.userName, "pass": t.passWord }, (err, user) => {
+	const params = { "name": t.userName, "pass": t.passWord, "supproject": [], "buyproject": [], "iftruename": false}
+	users.create(params, (err, user) => {
 		if (err) {
 			//console.log(err);
 			throw err;
@@ -98,7 +100,7 @@ app.delete('/api/userDelete/:_id', (req, res) => {
 	});
 });
 
-//===============支持记录==================//
+// TODO:===============支持记录==================//
 
 //查询支持记录
 app.get('/api/projects/suportRecord/:projectName', (req, res, next) => {
@@ -140,7 +142,66 @@ app.post('/api/projects/suportRecord/add', (req, res, next) => {
 });
 
 
+// TODO:===============订单记录==================//
 
+// //查询订购记录
+// app.get('/api/projects/buyRecord/:projectName', (req, res, next) => {
+// 	console.log('搜索项目的支持记录')
+// 	buyRecords.find({ "proName": req.params.projectName }, (err, projectRc) => {
+// 		console.log(projectRc)
+// 		if (err) {
+// 			throw err;
+// 		}
+// 		if (projectRc) { //findone 和find 返回值有区别，当找不到时 find返回空数组，findone返回null
+// 			console.log('proName不为null');
+// 			res.json(projectRc);
+// 		}
+// 		else {
+// 			console.log('proName为null');
+// 			res.send("未找到相关信息")
+// 		}
+// 	});
+// });
+
+//查询用户的所有订购记录
+app.get('/api/projects/buyRecord/:userName', (req, res, next) => {
+	console.log('搜索项目的支持记录')
+	buyRecords.find({ "userName": req.params.userName }, (err, RcArr) => {
+		console.log(RcArr)
+		if (err) {
+			throw err;
+		}
+		if (RcArr.length !== 0) { //findone 和find 返回值有区别，当找不到时 find返回空数组，findone返回null
+			console.log('RcArr不为null',RcArr);
+			res.json(RcArr);
+		}
+		else {
+			console.log('RcArr为null');
+			res.send("未找到相关信息")
+		}
+	});
+});
+
+
+//添加用户订购记录
+app.post('/api/projects/buyRecord/add', (req, res, next) => {
+	console.log('添加用户支持记录,即用户支持了事情')
+	//req.body test {"proName":"hahaha","userName":"wu","suportTime":"","suportMoney":131}
+	buyRecords.create(req.body, (err, userSuport) => {
+		console.log(userSuport)
+		if (err) {
+			throw err;
+		}
+		if (userSuport) { //findone 和find 返回值有区别，当找不到时 find返回空数组，findone返回null
+			console.log('用户支持');
+			res.json('支持成功');
+		}
+		else {
+			console.log('用户支持失败');
+			res.send("支持失败")
+		}
+	});
+});
 
 //===============项目==================//
 
@@ -203,18 +264,15 @@ app.post('/api/projects/search/name', (req, res, next) => {
 
 //按用户名查询项目
 app.post('/api/projects/search/owner', (req, res, next) => {
-	console.log('搜索单个项目')
 	let t = req.body
 	projects.find({ "owner": t.owner }, (err, project) => {
 		if (err) {
 			throw err;
 		}
 		if (project.length != 0) { //findone 和find 返回值有区别，当找不到时 find返回空数组，findone返回null
-			console.log('proName不为null');
 			res.json(project);
 		}
 		else {
-			console.log('proName为null');
 			res.send("未找到相关信息")
 		}
 	});
@@ -490,6 +548,89 @@ app.get('/api/projects/firstimgurl/:name', (req, res) => {
 //删除用户项目
 app.delete('/api/projects/:name', (req, res) => {
 	var query = { name: req.params.name };
+	projects.deleteOne(query, (err, project) => {
+		if (err) {
+			throw err;
+		}
+		res.json(project);
+	});
+});
+
+// 编辑用户项目
+app.post('/api/projects/edit', (req, res, next) => {
+	console.log('编辑用户项目',req.body,req)
+	let t = req.body._id
+	projects.findOne({ _id: t }, (err, project) => {
+		if (err) {
+			throw err;
+		}
+		if (project !== null) { //findone 和find 返回值有区别，当找不到时 find返回空数组，findone返回null
+			console.log('proName不为null',req.body);
+			console.log('proName不为null');
+			projects.updateOne({'_id':t},  req.body,(err, docs)=>{
+				if(err){
+					res.json('访问失败')
+				}
+				/**更新数据成功，紧接着查询数据 */
+				projects.findOne({ '_id':t },(err, p)=>{
+					if(err){
+						res.json('访问失败')
+					}
+					res.json('访问成功')
+				})
+			})
+			
+		}
+		else {
+			console.log('proName为null');
+			res.send("访问失败")
+		}
+	});
+});
+
+
+
+// ----------------地址管理================//
+
+// 用户名查询收货地址
+app.post('/api/projects/receive/owner', (req, res, next) => {
+	let t = req.body
+	projects.find({ "owner": t.owner }, (err, project) => {
+		if (err) {
+			throw err;
+		}
+		if (project.length != 0) { //findone 和find 返回值有区别，当找不到时 find返回空数组，findone返回null
+			res.json(project);
+		}
+		else {
+			res.send("未找到相关信息")
+		}
+	});
+});
+
+//添加用户地址 TODO: 记得加上用户名
+app.post('/api/projects/receive/add', (req, res, next) => {
+	console.log('添加用户支持记录,即用户支持了事情')
+	//req.body test {"proName":"hahaha","userName":"wu","suportTime":"","suportMoney":131}
+	buyRecords.create(req.body, (err, userSuport) => {
+		console.log(userSuport)
+		if (err) {
+			throw err;
+		}
+		if (userSuport) { //findone 和find 返回值有区别，当找不到时 find返回空数组，findone返回null
+			console.log('用户支持');
+			res.json('支持成功');
+		}
+		else {
+			console.log('用户支持失败');
+			res.send("支持失败")
+		}
+	});
+});
+
+//删除用户地址
+app.delete('/api/receive/:id', (req, res) => {
+	var query = { _id: req.params._id };
 	projects.deleteOne(query, (err, project) => {
 		if (err) {
 			throw err;

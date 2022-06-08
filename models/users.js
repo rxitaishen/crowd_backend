@@ -4,12 +4,19 @@ const mongoose = require('mongoose');
 const userSchema = mongoose.Schema({
 	"name":{
 		type: String,
-		
 	},
 	"pass":{
-		type: String,
-		
-	}
+		type: String,	
+	},
+	"supproject":{
+		type: Array,
+	},
+	"buyproject":{
+		type: Array,
+	},
+	"iftruename":{
+		type: Boolean,
+	},
 });
 
 const Users = module.exports = mongoose.model('users', userSchema);
